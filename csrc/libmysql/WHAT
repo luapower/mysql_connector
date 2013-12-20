@@ -1,0 +1,5 @@
+libmysql wasn't build from source.
+
+insead, libmysql.dll 6.1.0.0 was used.
+
+no binary for linux is included.

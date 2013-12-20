@@ -2,7 +2,7 @@
 local ffi = require'ffi'
 local bit = require'bit'
 require'mysql_h'
-local C = ffi.load'libmysql'
+local C = ffi.load(ffi.abi'win' and 'libmysql' or 'mysql')
 local M = {C = C}
 
 --we compare NULL pointers against NULL instead of nil for compatibility with luaffi.

@@ -4,8 +4,6 @@ tagline:     mysql ffi binding
 category:    Databases
 ---
 
-v1.1.1 | mysql Connector/C 6.1 | LuaJIT 2
-
 ## `local mysql = require'mysql'`
 
 A complete, lightweight ffi binding of the mysql client library.

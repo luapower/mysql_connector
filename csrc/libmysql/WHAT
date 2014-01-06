@@ -1,5 +1,4 @@
+libmysql 6.1.0.0 from http://dev.mysql.com/downloads/connector/c/ (GPL License)
+
 libmysql wasn't build from source.
-
-insead, libmysql.dll 6.1.0.0 was used.
-
 no binary for linux is included.

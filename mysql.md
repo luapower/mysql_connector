@@ -1,7 +1,6 @@
 ---
 project:     mysql
 tagline:     mysql ffi binding
-category:    Databases
 ---
 
 ## `local mysql = require'mysql'`

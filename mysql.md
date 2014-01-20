@@ -1,6 +1,6 @@
 ---
-project:     mysql
-tagline:     mysql ffi binding
+project: mysql
+tagline: mysql database client
 ---
 
 ## `local mysql = require'mysql'`

@@ -7,7 +7,7 @@ tagline: mysql database client
 
 A complete, lightweight ffi binding of the mysql client library.
 
-##  Summary
+## Summary
 
 -------------------------------------------------------------------------------- --------------------------------------------------------------------------------
 **[Connections]**
@@ -122,7 +122,7 @@ A complete, lightweight ffi binding of the mysql client library.
 `mysql.client_version() -> n`
 -------------------------------------------------------------------------------- --------------------------------------------------------------------------------
 
-##  Features:
+## Features
 
   * covers all of the functionality provided by the mysql C API
   * all data types are supported with options for conversion
@@ -132,7 +132,7 @@ A complete, lightweight ffi binding of the mysql client library.
   * lightweight OOP-style API using only `ffi.metatype`
   * no external dependencies
 
-##  Example:
+## Example
 
 ~~~{.lua}
 function print_help(search)
@@ -165,14 +165,16 @@ end
 print_help'CONCAT%'
 ~~~
 
-#  Connections
+## Connections
 
 ## `mysql.connect(host, [user], [pass], [db], [charset], [port]) -> conn`
 ## `mysql.connect(options_t) -> conn`
 
 Connect to a mysql server, optionally selecting a working database and charset.
 
-In the second form, `options_t` is a table that besides `host`, `user`, `pass`, `db`, `charset`, `port` can have the following fields:
+In the second form, `options_t` is a table that besides `host`, `user`, `pass`, `db`, `charset`, `port`
+can have the following fields:
+
   * `unix_socket`: specify a unix socket filename to connect to
   * `flags`: bit field corresponding to mysql [client_flag](http://dev.mysql.com/doc/refman/5.7/en/mysql-real-connect.html) parameter
     * can be a table of form `{CLIENT_... = true | false, ...}`, or
@@ -185,17 +187,18 @@ In the second form, `options_t` is a table that besides `host`, `user`, `pass`, 
 
 Close a mysql connection freeing all associated resources (otherwise called when `conn` is garbage collected).
 
-#  Queries
+##  Queries
 
 ## `conn:query(s)`
 
-Execute a query. If the query string contains multiple statements, only the first statement is executed (see the section on multiple statements).
+Execute a query. If the query string contains multiple statements, only the first statement is executed
+(see the section on multiple statements).
 
 ## `conn:escape(s) -> s`
 
 Escape a value to be safely embedded in SQL queries. Assumes the current charset.
 
-#  Fetching results
+##  Fetching results
 
 ## `conn:store_result() -> result`
 
@@ -208,6 +211,7 @@ Return a result object that will fetch the rows in the current result set from t
 ## `result:fetch([mode[, row_t]]) -> true, v1, v2, ... | row_t | nil`
 
 Fetch and return the next row of values from the current result set. Returns nil if there are no more rows to fetch.
+
   * the `mode` arg can contain any combination of the following letters:
     * `"n"` - return values in a table with numeric indices as keys.
     * `"a"` - return values in a table with field names as keys.
@@ -227,7 +231,8 @@ Fetch and return the next row of values from the current result set. Returns nil
 ## `result:rows([mode[, row_t]]) -> iterator() -> row_num, val1, val2, ...`
 ## `result:rows([mode[, row_t]]) -> iterator() -> row_num, row_t`
 
-Convenience iterator for fetching (or refetching) all the rows from the current result set. The `mode` arg is the same as for `result:fetch()`, with the exception that in unpacked mode, the first `true` value is not present.
+Convenience iterator for fetching (or refetching) all the rows from the current result set. The `mode` arg
+is the same as for `result:fetch()`, with the exception that in unpacked mode, the first `true` value is not present.
 
 ## `result:free()`
 
@@ -235,17 +240,19 @@ Free the result buffer (otherwise called when `result` is garbage collected).
 
 ## `result:row_count() -> n`
 
-Return the number of rows in the current result set . This value is only correct if `result:store_result()` was previously called or if all the rows were fetched, in other words if `result:eof()` is true.
+Return the number of rows in the current result set . This value is only correct if `result:store_result()` was
+previously called or if all the rows were fetched, in other words if `result:eof()` is true.
 
 ## `result:eof() -> true | false`
 
-Check if there are no more rows to fetch. If `result:store_result()` was previously called, then all rows were already fetched, so `result:eof()` always returns `true` in this case.
+Check if there are no more rows to fetch. If `result:store_result()` was previously called, then all rows were
+already fetched, so `result:eof()` always returns `true` in this case.
 
 ## `result:seek(row_number)`
 
 Seek back to a particular row number to refetch the rows from there.
 
-#  Query info
+## Query info
 
 ## `conn:field_count() -> n`
 ## `conn:affected_rows() -> n`
@@ -257,7 +264,7 @@ Seek back to a particular row number to refetch the rows from there.
 
 Return various pieces of information about the previously executed query.
 
-#  Field info
+## Field info
 
 ## `result:field_count() -> n`
 ## `result:field_name(field_number) -> s`
@@ -267,7 +274,7 @@ Return various pieces of information about the previously executed query.
 
 Return information about the fields (columns) in the current result set.
 
-#  Result bookmarks
+## Result bookmarks
 
 ## `result:tell() -> bookmark`
 
@@ -277,24 +284,27 @@ Get a bookmark to the current row to be later seeked into with `seek()`.
 
 Seek to a previous saved row bookmark, or to a specific row number, fetching more rows as needed.
 
-#  Multiple statement queries
+## Multiple statement queries
 
 ## `conn:next_result() -> true | false`
 
-Skip over to the next result set in a multiple statement query, and make that the current result set. Return true if there more result sets after this one.
+Skip over to the next result set in a multiple statement query, and make that the current result set.
+Return true if there more result sets after this one.
 
 ## `conn:more_results() -> true | false`
 
 Check if there are more result sets after this one.
 
-#  Prepared statements
+## Prepared statements
 
 Prepared statements are a way to run queries and retrieve results more efficiently from the database, in particular:
+
   * parametrized queries allow sending query parameters in their native format, avoiding having to convert values into strings and escaping those strings.
   * running the same query multiple times with different parameters each time allows the server to reuse the parsed query and possibly the query plan between runs.
   * fetching the result rows in preallocated buffers avoids dynamic allocation on each row fetch.
 
 The flow for prepared statements is like this:
+
   * call `conn:prepare()` to prepare a query and get a statement object.
   * call `stmt:bind_params()` and `stmt:bind_result()` to get the buffer objects for setting params and getting row values.
   * run the query multiple times; each time:
@@ -319,7 +329,9 @@ Fetch all the rows in the current result set from the server, otherwise the rows
 
 ## `stmt:fetch() -> true | false | true, 'truncated'`
 
-Fetch the next row from the current result set. Use a binding buffer (see prepared statements I/O section) to get the row values. If present, second value indicates that at least one of the rows were truncated because the receiving buffer was too small for it.
+Fetch the next row from the current result set. Use a binding buffer (see prepared statements I/O section)
+to get the row values. If present, second value indicates that at least one of the rows were truncated because
+the receiving buffer was too small for it.
 
 ## `stmt:free_result()`
 
@@ -354,13 +366,15 @@ See [manual](http://dev.mysql.com/doc/refman/5.7/en/mysql-stmt-reset.html).
 
 Seek into the current result set.
 
-#  Prepared statements I/O
+## Prepared statements I/O
 
 ## `stmt:bind_params(type1, ... | types_t) -> params`
 
-Bind query parameters according to a list of type definitions (which can be given either packed or unpacked). Return a binding buffer object to be used for setting parameters.
+Bind query parameters according to a list of type definitions (which can be given either packed or unpacked).
+Return a binding buffer object to be used for setting parameters.
 
 The types must be valid, fully specified SQL types, eg.
+
   * `smallint unsigned` specifies a 16bit unsigned integer
   * `bit(32)` specifies a 32bit bit field
   * `varchar(200)` specifies a 200 byte varchar.
@@ -372,6 +386,7 @@ The types must be valid, fully specified SQL types, eg.
 ## `params:set_date(i, [year], [month], [day], [hour], [min], [sec], [frac])`
 
 Set a parameter value.
+
   * the first form is for setting integers and bit fields.
   * the second and third forms are for setting variable-sized fields and decimal/numeric fields.
   * the last forms are for setting date/time/datetime/timestamp fields.
@@ -383,7 +398,11 @@ Send a parameter value in chunks (for long, var-sized values).
 
 ## `stmt:bind_result([type1, ... | types_t | maxsize]) -> fields`
 
-Bind result fields according to a list of type definitions (same as for params). Return a binding buffer object to be used for getting row values. If no types are specified, appropriate type definitions will be created automatically as to minimize type conversions. Variable-sized fields will get a buffer sized according to data type's maximum allowed size and `maxsize` (which defaults to 64k).
+Bind result fields according to a list of type definitions (same as for params).
+Return a binding buffer object to be used for getting row values.
+If no types are specified, appropriate type definitions will be created automatically as to minimize type conversions.
+Variable-sized fields will get a buffer sized according to data type's maximum allowed size
+and `maxsize` (which defaults to 64k).
 
 ## `fields:get(i) -> value`
 ## `fields:get_datetime(i) -> year, month, day, hour, min, sec, frac`
@@ -398,11 +417,11 @@ Check if a value is null without having to get it if it's not.
 
 Check if a value was truncated due to insufficient buffer space.
 
-==`stmt:bind_result_types([maxsize]) -> types_t`
+## `stmt:bind_result_types([maxsize]) -> types_t`
 
 Return the list of type definitions that describe the result of a prepared statement.
 
-#  Prepared statements settings
+## Prepared statements settings
 
 ## `stmt:update_max_length() -> true | false`
 ## `stmt:set_update_max_length(true | false)`
@@ -414,7 +433,7 @@ Return the list of type definitions that describe the result of a prepared state
 
 See [manual](http://dev.mysql.com/doc/refman/5.7/en/mysql-stmt-attr-set.html) for these.
 
-#  Connection info
+## Connection info
 
 ## `conn:set_charset(charset)`
 
@@ -454,7 +473,7 @@ Check if the connection to the server is still alive.
 
 Return various pieces of information about the connection and server.
 
-#  Transactions
+## Transactions
 
 ## `conn:commit()`
 ## `conn:rollback()`
@@ -465,15 +484,17 @@ Commit/rollback the current transaction.
 
 Set autocommit on the connection (set to true if no argument is given).
 
-#  Reflection
+## Reflection
 
 ## `conn:list_dbs([wildcard]) -> result`
 ## `conn:list_tables([wildcard]) -> result`
 ## `conn:list_processes() -> result`
 
-Return information about databases, tables and proceses as a stored result object that can be iterated etc. using the methods of result objects. The optional `wild` parameter may contain the wildcard characters `"%"` or `"_"`, similar to executing the query `SHOW DATABASES [LIKE wild]`.
+Return information about databases, tables and proceses as a stored result object that can be iterated etc.
+using the methods of result objects. The optional `wild` parameter may contain the wildcard characters
+`"%"` or `"_"`, similar to executing the query `SHOW DATABASES [LIKE wild]`.
 
-#  Remote control
+## Remote control
 
 ## `conn:kill(pid)`
 
@@ -485,13 +506,15 @@ Shutdown the server. `SHUTDOWN` priviledge needed. The level argument is reserve
 
 ## `conn:refresh(options)`
 
-Flush tables or caches, or resets replication server information.  `RELOAD` priviledge needed. Options are either a table of form `{REFRESH_... = true | false, ...}` or a number of form `bit.bor(mysql.C.MYSQL_REFRESH_*, ...)` and they are as described in the [mysql manual](http://dev.mysql.com/doc/refman/5.7/en/mysql-refresh.html).
+Flush tables or caches, or resets replication server information. `RELOAD` priviledge needed. Options are either
+a table of form `{REFRESH_... = true | false, ...}` or a number of form `bit.bor(mysql.C.MYSQL_REFRESH_*, ...)` and
+they are as described in the [mysql manual](http://dev.mysql.com/doc/refman/5.7/en/mysql-refresh.html).
 
 ## `conn:dump_debug_info()`
 
 Instruct the server to dump debug info in the log file. `SUPER` priviledge needed.
 
-#  Client library info
+## Client library info
 
 ## `mysql.thread_safe() -> true | false`
 ## `mysql.client_info() -> s`
@@ -499,7 +522,7 @@ Instruct the server to dump debug info in the log file. `SUPER` priviledge neede
 
 ----
 
-##  TODO
+## TODO
 
   * reader function for getting large blobs in chunks using mysql_stmt_fetch_column: `stmt:chunks(i[, bufsize])` or `stmt:read()` ?
   * test with Linux, OSX, 64bit OSs

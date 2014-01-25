@@ -1,0 +1,12 @@
+*
+!/bin/
+!/csrc/
+!/bin/mingw32/
+!/bin/linux32/
+!/media/
+
+!/mysql*
+!/bin/mingw32/libmysql*
+!/bin/linux32/libmysql*
+!/csrc/mysql/
+!/csrc/mysql/**

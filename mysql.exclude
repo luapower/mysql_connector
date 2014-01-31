@@ -1,12 +1,26 @@
 *
 !/bin/
-!/csrc/
 !/bin/mingw32/
+!/bin/mingw64/
 !/bin/linux32/
+!/bin/linux64/
+!/bin/osx32/
+!/bin/osx64/
+!/bin/mingw32/clib/
+!/bin/mingw64/clib/
+!/bin/linux32/clib/
+!/bin/linux64/clib/
+!/bin/osx32/clib/
+!/bin/osx64/clib/
+!/csrc/
 !/media/
 
 !/mysql*
 !/bin/mingw32/libmysql*
+!/bin/mingw64/libmysql*
 !/bin/linux32/libmysql*
+!/bin/linux64/libmysql*
+!/bin/osx32/libmysql*
+!/bin/osx64/libmysql*
 !/csrc/mysql/
 !/csrc/mysql/**

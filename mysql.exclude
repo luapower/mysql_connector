@@ -16,11 +16,3 @@
 !/media/
 
 !/mysql*
-!/bin/mingw32/libmysql*
-!/bin/mingw64/libmysql*
-!/bin/linux32/libmysql*
-!/bin/linux64/libmysql*
-!/bin/osx32/libmysql*
-!/bin/osx64/libmysql*
-!/csrc/mysql/
-!/csrc/mysql/**

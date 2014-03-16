@@ -1,8 +1,9 @@
---mysql ffi binding by Cosmin Apreutesei. supports mysql Connector/C 6.1. based on mySQL 5.7 manual.
+--mysql ffi binding (Cosmin Apreutesei, public domain). supports mysql Connector/C 6.1. based on mySQL 5.7 manual.
 local ffi = require'ffi'
 local bit = require'bit'
 require'mysql_h'
-local C = ffi.load(ffi.abi'win' and 'libmysql' or 'mysql')
+local ok, C = pcall(ffi.load, ffi.abi'win' and 'libmysql' or 'mysql')
+if not ok then C = ffi.load(ffi.abi'win' and 'libmariadb' or 'mariadb') end
 local M = {C = C}
 
 --we compare NULL pointers against NULL instead of nil for compatibility with luaffi.

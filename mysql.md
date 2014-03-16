@@ -7,6 +7,8 @@ tagline: mysql database client
 
 A complete, lightweight ffi binding of the mysql client library.
 
+> NOTE: binaries are in separate packages [libmysql] and [libmariadb].
+
 ## Summary
 
 -------------------------------------------------------------------------------- --------------------------------------------------------------------------------

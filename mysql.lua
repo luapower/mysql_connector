@@ -2,8 +2,9 @@
 local ffi = require'ffi'
 local bit = require'bit'
 require'mysql_h'
-local ok, C = pcall(ffi.load, ffi.abi'win' and 'libmysql' or 'mysql')
-if not ok then C = ffi.load(ffi.abi'win' and 'libmariadb' or 'mariadb') end
+local myok, myC = pcall(ffi.load, ffi.abi'win' and 'libmysql' or 'mysql')
+local maok, maC = pcall(ffi.load, ffi.abi'win' and 'libmariadb' or 'mariadb')
+local C = maok and myC or maC
 local M = {C = C}
 
 --we compare NULL pointers against NULL instead of nil for compatibility with luaffi.
@@ -1225,7 +1226,7 @@ end
 --publish methods
 
 if not rawget(_G, '__MYSQL__') then
-_G.__MYSQL__ = true
+__MYSQL__ = true
 ffi.metatype('MYSQL', {__index = conn})
 ffi.metatype('MYSQL_RES', {__index = res})
 ffi.metatype('MYSQL_STMT', {__index = stmt})

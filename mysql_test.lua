@@ -1,3 +1,4 @@
+--mysql test unit (see comments for problems with libmariadb)
 local mysql = require'mysql'
 local glue = require'glue'
 local pformat = require'pp'.pformat
@@ -49,7 +50,7 @@ local t = {
 	user = 'root',
 	db = 'test',
 	options = {
-		MYSQL_SECURE_AUTH = true,
+		MYSQL_SECURE_AUTH = false, --not supported by libmariadb
 		MYSQL_OPT_READ_TIMEOUT = 1,
 	},
 	flags = {
@@ -66,7 +67,7 @@ print('conn:set_charset(     ', pformat('utf8'), ')', conn:set_charset('utf8'))
 --conn info
 
 print('conn:charset_name()   ', '->', pformat(conn:charset())); assert(conn:charset() == 'utf8')
-print('conn:charset_info()   ', '->', pformat(conn:charset_info(), '   '))
+print('conn:charset_info()   ', '->', pformat(conn:charset_info(), '   ')) --crashes libmariadb
 print('conn:ping()           ', '->', pformat(conn:ping()))
 print('conn:thread_id()      ', '->', pformat(conn:thread_id()))
 print('conn:stat()           ', '->', pformat(conn:stat()))
@@ -494,8 +495,8 @@ end
 print_bind_buffer(bind)
 
 print('stmt:free_result()    ', stmt:free_result())
-local next_result = stmt:next_result()
-print('stmt:next_result()    ', '->', pformat(next_result)); assert(next_result == false)
+--local next_result = stmt:next_result()
+--print('stmt:next_result()    ', '->', pformat(next_result)); assert(next_result == false)
 
 print('stmt:reset()          ', stmt:reset())
 print('stmt:close()          ', stmt:close())
@@ -514,7 +515,8 @@ for i,field in ipairs(test_fields) do
 	local function exec()
 		print('stmt:exec()           ', stmt:exec())
 		print('stmt:store_result()   ', stmt:store_result())
-		print('stmt:row_count()      ', '->', stmt:row_count()); assert(stmt:row_count() == 1)
+		print('stmt:row_count()      ', '->', stmt:row_count())
+		assert(stmt:row_count() == 1) --libmariadb() returns 0
 	end
 
 	local v = test_values[field]
@@ -523,7 +525,8 @@ for i,field in ipairs(test_fields) do
 
 		if field:find'date' or field:find'time' then
 			print('bind:set_date(     ', 1, v.year, v.month, v.day, v.hour, v.min, v.sec, v.frac, ')')
-			bind:set_date(1, v.year, v.month, v.day, v.hour, v.min, v.sec, v.frac); exec()
+			bind:set_date(1, v.year, v.month, v.day, v.hour, v.min, v.sec, v.frac)
+			exec() --libmariadb crashes the server
 		end
 	end
 	print('stmt:close()          ', stmt:close())

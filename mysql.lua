@@ -2,7 +2,7 @@
 local ffi = require'ffi'
 local bit = require'bit'
 require'mysql_h'
-local myok, myC = pcall(ffi.load, ffi.abi'win' and 'libmysql' or 'mysql')
+local myok, myC = pcall(ffi.load, ffi.abi'win' and 'libmysql' or 'mysqlclient')
 local maok, maC = pcall(ffi.load, ffi.abi'win' and 'libmariadb' or 'mariadb')
 local C = maok and myC or maC
 local M = {C = C}

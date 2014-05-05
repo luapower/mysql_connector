@@ -1,7 +1,7 @@
 --mysql test unit (see comments for problems with libmariadb)
 local mysql = require'mysql'
 local glue = require'glue'
-local pformat = require'pp'.pformat
+local pp = require'pp'
 local myprint = require'mysql_print'
 local ffi = require'ffi'
 
@@ -17,7 +17,7 @@ local function assert_deepequal(t1, t2) --assert the equality of two values
 		for k,v in pairs(t1) do assert_deepequal(t2[k], v) end
 		for k,v in pairs(t2) do assert_deepequal(t1[k], v) end
 	else
-		assert(t1 == t2, pformat(t1) .. ' ~= ' .. pformat(t2))
+		assert(t1 == t2, pp.format(t1) .. ' ~= ' .. pp.format(t2))
 	end
 end
 
@@ -39,9 +39,9 @@ end
 
 --client library
 
-print('mysql.thread_safe()   ', '->', pformat(mysql.thread_safe()))
-print('mysql.client_info()   ', '->', pformat(mysql.client_info()))
-print('mysql.client_version()', '->', pformat(mysql.client_version()))
+print('mysql.thread_safe()   ', '->', pp.format(mysql.thread_safe()))
+print('mysql.client_info()   ', '->', pp.format(mysql.client_info()))
+print('mysql.client_version()', '->', pp.format(mysql.client_version()))
 
 --connections
 
@@ -58,24 +58,24 @@ local t = {
 	},
 }
 local conn = mysql.connect(t)
-print('mysql.connect         ', pformat(t, '   '), '->', conn)
-print('conn:change_user(     ', pformat(t.user), ')', conn:change_user(t.user))
-print('conn:select_db(       ', pformat(t.db), ')', conn:select_db(t.db))
-print('conn:set_multiple_statements(', pformat(true), ')', conn:set_multiple_statements(true))
-print('conn:set_charset(     ', pformat('utf8'), ')', conn:set_charset('utf8'))
+print('mysql.connect         ', pp.format(t, '   '), '->', conn)
+print('conn:change_user(     ', pp.format(t.user), ')', conn:change_user(t.user))
+print('conn:select_db(       ', pp.format(t.db), ')', conn:select_db(t.db))
+print('conn:set_multiple_statements(', pp.format(true), ')', conn:set_multiple_statements(true))
+print('conn:set_charset(     ', pp.format('utf8'), ')', conn:set_charset('utf8'))
 
 --conn info
 
-print('conn:charset_name()   ', '->', pformat(conn:charset())); assert(conn:charset() == 'utf8')
-print('conn:charset_info()   ', '->', pformat(conn:charset_info(), '   ')) --crashes libmariadb
-print('conn:ping()           ', '->', pformat(conn:ping()))
-print('conn:thread_id()      ', '->', pformat(conn:thread_id()))
-print('conn:stat()           ', '->', pformat(conn:stat()))
-print('conn:server_info()    ', '->', pformat(conn:server_info()))
-print('conn:host_info()      ', '->', pformat(conn:host_info()))
-print('conn:server_version() ', '->', pformat(conn:server_version()))
-print('conn:proto_info()     ', '->', pformat(conn:proto_info()))
-print('conn:ssl_cipher()     ', '->', pformat(conn:ssl_cipher()))
+print('conn:charset_name()   ', '->', pp.format(conn:charset())); assert(conn:charset() == 'utf8')
+print('conn:charset_info()   ', '->', pp.format(conn:charset_info(), '   ')) --crashes libmariadb
+print('conn:ping()           ', '->', pp.format(conn:ping()))
+print('conn:thread_id()      ', '->', pp.format(conn:thread_id()))
+print('conn:stat()           ', '->', pp.format(conn:stat()))
+print('conn:server_info()    ', '->', pp.format(conn:server_info()))
+print('conn:host_info()      ', '->', pp.format(conn:host_info()))
+print('conn:server_version() ', '->', pp.format(conn:server_version()))
+print('conn:proto_info()     ', '->', pp.format(conn:proto_info()))
+print('conn:ssl_cipher()     ', '->', pp.format(conn:ssl_cipher()))
 
 --transactions
 
@@ -310,9 +310,9 @@ local bind_types = {
 --queries
 
 local esc = "'escape me'"
-print('conn:escape(          ', pformat(esc), ')', '->', pformat(conn:escape(esc)))
+print('conn:escape(          ', pp.format(esc), ')', '->', pp.format(conn:escape(esc)))
 local q1 = 'drop table if exists binding_test'
-print('conn:query(           ', pformat(q1), ')', conn:query(q1))
+print('conn:query(           ', pp.format(q1), ')', conn:query(q1))
 
 local field_defs = ''
 for i,field in ipairs(test_fields) do
@@ -336,16 +336,16 @@ select * from binding_test;
 
 --query info
 
-print('conn:field_count()    ', '->', pformat(conn:field_count()))
-print('conn:affected_rows()  ', '->', pformat(conn:affected_rows()))
+print('conn:field_count()    ', '->', pp.format(conn:field_count()))
+print('conn:affected_rows()  ', '->', pp.format(conn:affected_rows()))
 print('conn:insert_id()      ', '->', conn:insert_id())
-print('conn:errno()          ', '->', pformat(conn:errno()))
-print('conn:sqlstate()       ', '->', pformat(conn:sqlstate()))
-print('conn:warning_count()  ', '->', pformat(conn:warning_count()))
-print('conn:info()           ', '->', pformat(conn:info()))
+print('conn:errno()          ', '->', pp.format(conn:errno()))
+print('conn:sqlstate()       ', '->', pp.format(conn:sqlstate()))
+print('conn:warning_count()  ', '->', pp.format(conn:warning_count()))
+print('conn:info()           ', '->', pp.format(conn:info()))
 for i=1,3 do
-print('conn:more_results()   ', '->', pformat(conn:more_results())); assert(conn:more_results())
-print('conn:next_result()    ', '->', pformat(conn:next_result()))
+print('conn:more_results()   ', '->', pp.format(conn:more_results())); assert(conn:more_results())
+print('conn:next_result()    ', '->', pp.format(conn:next_result()))
 end
 assert(not conn:more_results())
 
@@ -353,15 +353,15 @@ assert(not conn:more_results())
 
 local res = conn:store_result() --TODO: local res = conn:use_result()
 print('conn:store_result()   ', '->', res)
-print('res:row_count()       ', '->', pformat(res:row_count())); assert(res:row_count() == 2)
-print('res:field_count()     ', '->', pformat(res:field_count())); assert(res:field_count() == #test_fields)
-print('res:eof()             ', '->', pformat(res:eof())); assert(res:eof() == true)
+print('res:row_count()       ', '->', pp.format(res:row_count())); assert(res:row_count() == 2)
+print('res:field_count()     ', '->', pp.format(res:field_count())); assert(res:field_count() == #test_fields)
+print('res:eof()             ', '->', pp.format(res:eof())); assert(res:eof() == true)
 print('res:fields()          ', '->') print_fields(res:fields())
-print('res:field_info(1)     ', '->', pformat(res:field_info(1)))
+print('res:field_info(1)     ', '->', pp.format(res:field_info(1)))
 
 --first row: fetch as array and test values
 local row = assert(res:fetch'n')
-print("res:fetch'n'          ", '->', pformat(row))
+print("res:fetch'n'          ", '->', pp.format(row))
 for i,field in res:fields() do
 	assert_deepequal(row[i], test_values[field.name])
 end
@@ -369,7 +369,7 @@ end
 --first row again: fetch as assoc. array and test values
 print('res:seek(1)           ', '->', res:seek(1))
 local row = assert(res:fetch'a')
-print("res:fetch'a'         ", '->', pformat(row))
+print("res:fetch'a'         ", '->', pp.format(row))
 for i,field in res:fields() do
 	assert_deepequal(row[field.name], test_values[field.name])
 end
@@ -384,7 +384,7 @@ local function pack(_, ...)
 	return t
 end
 local row = pack(res:fetch())
-print("res:fetch()           ", '-> packed: ', pformat(row))
+print("res:fetch()           ", '-> packed: ', pp.format(row))
 for i,field in res:fields() do
 	assert_deepequal(row[i], test_values[field.name])
 end
@@ -398,13 +398,13 @@ print()
 print(fit('', 4, 'right') .. '  ' .. fit('field', 20) .. fit('unparsed', 40) .. '  ' .. 'parsed')
 print(('-'):rep(4 + 2 + 20 + 40 + 40))
 for i,field in res:fields() do
-	print(fit(tostring(i), 4, 'right') .. '  ' .. fit(field.name, 20) .. fit(pformat(row_s[i]), 40) .. '  ' .. pformat(row[i]))
+	print(fit(tostring(i), 4, 'right') .. '  ' .. fit(field.name, 20) .. fit(pp.format(row_s[i]), 40) .. '  ' .. pp.format(row[i]))
 end
 print()
 
 --second row: all nulls
 local row = assert(res:fetch'n')
-print("res:fetch'n'          ", '->', pformat(row))
+print("res:fetch'n'          ", '->', pp.format(row))
 assert(#row == 0)
 for i=1,res:field_count() do
 	assert(row[i] == nil)
@@ -433,8 +433,8 @@ print('res:list_processes()  ', '->'); print_result(conn:list_processes())
 local query = 'select '.. table.concat(test_fields, ', ')..' from binding_test'
 local stmt = conn:prepare(query)
 
-print('conn:prepare(         ', pformat(query), ')', '->', stmt)
-print('stmt:field_count()    ', '->', pformat(stmt:field_count())); assert(stmt:field_count() == #test_fields)
+print('conn:prepare(         ', pp.format(query), ')', '->', stmt)
+print('stmt:field_count()    ', '->', pp.format(stmt:field_count())); assert(stmt:field_count() == #test_fields)
 --we can get the fields and their types before execution so we can create create our bind structures.
 --max. length is not computed though, but length is, so we can use that.
 print('stmt:fields()         ', '->'); print_fields(stmt:fields())
@@ -446,7 +446,7 @@ for i,field in ipairs(test_fields) do
 	btypes[i] = bind_types[field]
 end
 local bind = stmt:bind_result(btypes)
-print('stmt:bind_result(     ', pformat(btypes), ')', '->', pformat(bind))
+print('stmt:bind_result(     ', pp.format(btypes), ')', '->', pp.format(bind))
 
 --execution and loading
 
@@ -455,10 +455,10 @@ print('stmt:store_result()   ', stmt:store_result())
 
 --result info
 
-print('stmt:row_count()      ', '->', pformat(stmt:row_count()))
-print('stmt:affected_rows()  ', '->', pformat(stmt:affected_rows()))
-print('stmt:insert_id()      ', '->', pformat(stmt:insert_id()))
-print('stmt:sqlstate()       ', '->', pformat(stmt:sqlstate()))
+print('stmt:row_count()      ', '->', pp.format(stmt:row_count()))
+print('stmt:affected_rows()  ', '->', pp.format(stmt:affected_rows()))
+print('stmt:insert_id()      ', '->', pp.format(stmt:insert_id()))
+print('stmt:sqlstate()       ', '->', pp.format(stmt:sqlstate()))
 
 --result data (different API since we don't get a result object)
 
@@ -466,9 +466,9 @@ print('stmt:fetch()          ', stmt:fetch())
 
 print('stmt:fields()         ', '->'); print_fields(stmt:fields())
 
-print('bind:is_truncated(1)  ', '->', pformat(bind:is_truncated(1))); assert(bind:is_truncated(1) == false)
-print('bind:is_null(1)       ', '->', pformat(bind:is_null(1))); assert(bind:is_null(1) == false)
-print('bind:get(1)           ', '->', pformat(bind:get(1))); assert(bind:get(1) == test_values.fdecimal)
+print('bind:is_truncated(1)  ', '->', pp.format(bind:is_truncated(1))); assert(bind:is_truncated(1) == false)
+print('bind:is_null(1)       ', '->', pp.format(bind:is_null(1))); assert(bind:is_null(1) == false)
+print('bind:get(1)           ', '->', pp.format(bind:get(1))); assert(bind:get(1) == test_values.fdecimal)
 local i = field_indices.fdate
 print('bind:get_date(        ', i, ')', '->', bind:get_date(i)); assert_deepequal({bind:get_date(i)}, {2013, 10, 5})
 local i = field_indices.ftime
@@ -488,7 +488,7 @@ local function print_bind_buffer(bind)
 		assert_deepequal(v, test_values[field])
 		assert(bind:is_truncated(i) == false)
 		assert(bind:is_null(i) == (test_values[field] == nil))
-		print(fit(tostring(i), 4, 'right') .. '  ' .. fit(field, 20) .. pformat(v))
+		print(fit(tostring(i), 4, 'right') .. '  ' .. fit(field, 20) .. pp.format(v))
 	end
 	print()
 end
@@ -496,7 +496,7 @@ print_bind_buffer(bind)
 
 print('stmt:free_result()    ', stmt:free_result())
 --local next_result = stmt:next_result()
---print('stmt:next_result()    ', '->', pformat(next_result)); assert(next_result == false)
+--print('stmt:next_result()    ', '->', pp.format(next_result)); assert(next_result == false)
 
 print('stmt:reset()          ', stmt:reset())
 print('stmt:close()          ', stmt:close())
@@ -506,11 +506,11 @@ print('stmt:close()          ', stmt:close())
 for i,field in ipairs(test_fields) do
 	local query = 'select * from binding_test where '..field..' = ?'
 	local stmt = conn:prepare(query)
-	print('conn:prepare(         ', pformat(query), ')')
+	print('conn:prepare(         ', pp.format(query), ')')
 	local param_bind_def = {bind_types[field]}
 
 	local bind = stmt:bind_params(param_bind_def)
-	print('stmt:bind_params      ', pformat(param_bind_def))
+	print('stmt:bind_params      ', pp.format(param_bind_def))
 
 	local function exec()
 		print('stmt:exec()           ', stmt:exec())
@@ -521,7 +521,7 @@ for i,field in ipairs(test_fields) do
 
 	local v = test_values[field]
 	if v ~= nil then
-		print('bind:set(             ', 1, pformat(v), ')'); bind:set(1, v); exec()
+		print('bind:set(             ', 1, pp.format(v), ')'); bind:set(1, v); exec()
 
 		if field:find'date' or field:find'time' then
 			print('bind:set_date(     ', 1, v.year, v.month, v.day, v.hour, v.min, v.sec, v.frac, ')')
@@ -545,7 +545,7 @@ print_bind_buffer(bind)
 stmt:close()
 
 local q = 'drop table binding_test'
-print('conn:query(           ', pformat(q), ')', conn:query(q))
+print('conn:query(           ', pp.format(q), ')', conn:query(q))
 print('conn:commit()         ', conn:commit())
 print('conn:close()          ', conn:close())
 

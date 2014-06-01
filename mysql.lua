@@ -4,7 +4,7 @@ local bit = require'bit'
 require'mysql_h'
 local myok, myC = pcall(ffi.load, ffi.abi'win' and 'libmysql' or 'mysqlclient')
 local maok, maC = pcall(ffi.load, ffi.abi'win' and 'libmariadb' or 'mariadb')
-local C = maok and myC or maC
+local C = assert((myok and myC) or (maok and maC), 'mysql or mariadb client library not found')
 local M = {C = C}
 
 --we compare NULL pointers against NULL instead of nil for compatibility with luaffi.

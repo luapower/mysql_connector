@@ -141,7 +141,8 @@ function print_help(search)
    local mysql = require'mysql'
 
    local conn = mysql.connect('localhost', 'root', nil, 'mysql', 'utf8')
-   conn:query("select name, description, example from help_topic where name like '" .. conn:escape(search) .. "'")
+   conn:query("select name, description, example from help_topic where name like '" ..
+						conn:escape(search) .. "'")
    local result = conn:store_result()
 
    print('Found:')

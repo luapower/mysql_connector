@@ -51,6 +51,7 @@ A complete, lightweight ffi binding of the mysql client library.
 `conn:more_results() -> true | false`                                            are there more result sets?
 **[Prepared statements]**
 `conn:prepare(query) -> stmt`                                                    prepare a query for multiple executions
+`stmt:param_count() -> n`																			number of params
 `stmt:exec()`                                                                    execute a prepared statement
 `stmt:store_result()`                                                            store all the resulted rows to the client
 `stmt:fetch() -> true | false | true, 'truncated'`                               fetch the next row
@@ -321,6 +322,10 @@ The flow for prepared statements is like this:
 ## `conn:prepare(query) -> stmt, params`
 
 Prepare a query for multiple execution and return a statement object.
+
+## `stmt:param_count() -> n`
+
+Number of parameters.
 
 ## `stmt:exec()`
 

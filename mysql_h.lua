@@ -1,5 +1,8 @@
---result of `cpp mysql.h` plus lots of cleanup and defines from other headers; by Cosmin Apreutesei; MySQL Connector/C 6.1
---NOTE that MySQL Connector/C is GPL software. Could this file be considered "derived work" then?
+
+--result of `cpp mysql.h` with lots of cleanup and defines from other headers.
+--Written by Cosmin Apreutesei. MySQL Connector/C 6.1.
+
+--NOTE: MySQL Connector/C is GPL software. Is this "derived work" then?
 
 local ffi = require'ffi'
 
@@ -17,7 +20,7 @@ enum {
 	MYSQL_DATA_TRUNCATED = 101
 };
 
-// -------------------------------------------------------------------------------- error constants
+// ----------------------------------------------------------- error constants
 
 // NOTE: added MYSQL_ prefix to these.
 enum mysql_error_code {
@@ -88,13 +91,13 @@ enum mysql_error_code {
 	MYSQL_CR_AUTH_PLUGIN_ERR = 2061
 };
 
-// -------------------------------------------------------------------------------- client library
+// ------------------------------------------------------------ client library
 
-unsigned int  mysql_thread_safe(void);          // is the client library thread safe?
+unsigned int  mysql_thread_safe(void);   // is the client library thread safe?
 const char   *mysql_get_client_info(void);
 unsigned long mysql_get_client_version(void);
 
-// -------------------------------------------------------------------------------- connections
+// --------------------------------------------------------------- connections
 
 typedef struct MYSQL_ MYSQL;
 
@@ -176,7 +179,8 @@ int mysql_set_character_set(MYSQL *mysql, const char *csname);
 
 int mysql_select_db(MYSQL *mysql, const char *db);
 
-my_bool mysql_change_user(MYSQL *mysql, const char *user, const char *passwd, const char *db);
+my_bool mysql_change_user(MYSQL *mysql, const char *user, const char *passwd,
+	const char *db);
 
 my_bool mysql_ssl_set(MYSQL *mysql, const char *key,
           const char *cert, const char *ca,
@@ -189,7 +193,7 @@ enum enum_mysql_set_option
 };
 int mysql_set_server_option(MYSQL *mysql, enum enum_mysql_set_option option);
 
-// -------------------------------------------------------------------------------- connection info
+// ----------------------------------------------------------- connection info
 
 const char * mysql_character_set_name(MYSQL *mysql);
 
@@ -215,18 +219,19 @@ unsigned long mysql_get_server_version(MYSQL *mysql);
 unsigned int mysql_get_proto_info(MYSQL *mysql);
 const char * mysql_get_ssl_cipher(MYSQL *mysql);
 
-// -------------------------------------------------------------------------------- transactions
+// -------------------------------------------------------------- transactions
 
 my_bool mysql_commit(MYSQL * mysql);
 my_bool mysql_rollback(MYSQL * mysql);
 my_bool mysql_autocommit(MYSQL * mysql, my_bool auto_mode);
 
-// -------------------------------------------------------------------------------- queries
+// ------------------------------------------------------------------- queries
 
-unsigned long mysql_real_escape_string(MYSQL *mysql, char *to, const char *from, unsigned long length);
+unsigned long mysql_real_escape_string(MYSQL *mysql, char *to,
+	const char *from, unsigned long length);
 int mysql_real_query(MYSQL *mysql, const char *q, unsigned long length);
 
-// -------------------------------------------------------------------------------- query info
+// ---------------------------------------------------------------- query info
 
 unsigned int mysql_field_count(MYSQL *mysql);
 my_ulonglong mysql_affected_rows(MYSQL *mysql);
@@ -237,7 +242,7 @@ const char * mysql_sqlstate(MYSQL *mysql);
 unsigned int mysql_warning_count(MYSQL *mysql);
 const char * mysql_info(MYSQL *mysql);
 
-// -------------------------------------------------------------------------------- query results
+// ------------------------------------------------------------- query results
 
 int mysql_next_result(MYSQL *mysql);
 my_bool mysql_more_results(MYSQL *mysql);
@@ -272,7 +277,7 @@ typedef MYSQL_ROWS *MYSQL_ROW_OFFSET;
 MYSQL_ROW_OFFSET mysql_row_tell(MYSQL_RES *res);
 MYSQL_ROW_OFFSET mysql_row_seek(MYSQL_RES *result, MYSQL_ROW_OFFSET offset);
 
-// -------------------------------------------------------------------------------- query field info
+// ---------------------------------------------------------- query field info
 
 enum enum_field_types {
 	MYSQL_TYPE_DECIMAL, MYSQL_TYPE_TINY,
@@ -352,13 +357,13 @@ typedef struct st_mysql_field {
 
 MYSQL_FIELD *mysql_fetch_field_direct(MYSQL_RES *res, unsigned int fieldnr);
 
-// -------------------------------------------------------------------------------- reflection
+// ---------------------------------------------------------------- reflection
 
 MYSQL_RES *mysql_list_dbs(MYSQL *mysql, const char *wild);
 MYSQL_RES *mysql_list_tables(MYSQL *mysql, const char *wild);
 MYSQL_RES *mysql_list_processes(MYSQL *mysql);
 
-// -------------------------------------------------------------------------------- remote control
+// ------------------------------------------------------------ remote control
 
 int mysql_kill(MYSQL *mysql, unsigned long pid);
 
@@ -403,10 +408,10 @@ enum {
 	MYSQL_REFRESH_USER_RESOURCES   = 0x80000L,
 	MYSQL_REFRESH_FOR_EXPORT       = 0x100000L, /* FLUSH TABLES ... FOR EXPORT */
 };
-int mysql_refresh(MYSQL *mysql, unsigned int refresh_options);                   // needs RELOAD priviledge
-int mysql_dump_debug_info(MYSQL *mysql);                                         // needs SUPER priviledge
+int mysql_refresh(MYSQL *mysql, unsigned int refresh_options); // needs RELOAD priviledge
+int mysql_dump_debug_info(MYSQL *mysql);                       // needs SUPER priviledge
 
-// -------------------------------------------------------------------------------- prepared statements
+// ------------------------------------------------------- prepared statements
 
 typedef struct MYSQL_STMT_ MYSQL_STMT;
 
@@ -461,7 +466,7 @@ my_bool mysql_stmt_send_long_data(MYSQL_STMT *stmt,
                                           const char *data,
                                           unsigned long length);
 
-// -------------------------------------------------------------------------------- prepared statements / bindings
+// -------------------------------------------- prepared statements / bindings
 
 enum enum_mysql_timestamp_type
 {
@@ -511,7 +516,7 @@ int mysql_stmt_fetch_column(MYSQL_STMT *stmt, MYSQL_BIND *bind_arg,
                                     unsigned int column,
                                     unsigned long offset);
 
-// -------------------------------------------------------------------------------- LOAD DATA LOCAL INFILE hooks
+// ---------------------------------------------- LOAD DATA LOCAL INFILE hooks
 
 void mysql_set_local_infile_handler(MYSQL *mysql,
                                int (*local_infile_init)(void **, const char *, void *),
@@ -521,31 +526,33 @@ void mysql_set_local_infile_handler(MYSQL *mysql,
 										 void *);
 void mysql_set_local_infile_default(MYSQL *mysql);
 
-// -------------------------------------------------------------------------------- mysql proxy scripting
+// ----------------------------------------------------- mysql proxy scripting
 
 my_bool mysql_read_query_result(MYSQL *mysql);
 
-// -------------------------------------------------------------------------------- debugging
+// ----------------------------------------------------------------- debugging
 
 void mysql_debug(const char *debug);
 
-// -------------------------------------------------------------------------------- present but not documented
+// ------------------------------------------------ present but not documented
 
-int     mysql_server_init(int argc, char **argv, char **groups);
-void    mysql_server_end(void);
+int  mysql_server_init(int argc, char **argv, char **groups);
+void mysql_server_end(void);
 char *get_tty_password(const char *opt_message);
 void myodbc_remove_escape(MYSQL *mysql, char *name);
 my_bool mysql_embedded(void);
 int mysql_send_query(MYSQL *mysql, const char *q, unsigned long length);
 
-// -------------------------------------------------------------------------------- redundant functions
+// ------------------------------------------------------- redundant functions
 
 my_bool mysql_thread_init(void); // called anyway
-void    mysql_thread_end(void);  // called anyway
+void mysql_thread_end(void);  // called anyway
 const char *mysql_errno_to_sqlstate(unsigned int mysql_errno); // use mysql_sqlstate
-unsigned long mysql_hex_string(char *to, const char *from, unsigned long from_length); // bad taste
+unsigned long mysql_hex_string(char *to, const char *from,
+	unsigned long from_length); // bad taste
 
-// redundant ways to get field info (we use use mysql_field_count and mysql_fetch_field_direct)
+// redundant ways to get field info.
+// we use use mysql_field_count and mysql_fetch_field_direct instead.
 MYSQL_FIELD *mysql_fetch_field(MYSQL_RES *result);
 MYSQL_FIELD *mysql_fetch_fields(MYSQL_RES *res);
 typedef unsigned int MYSQL_FIELD_OFFSET;
@@ -553,10 +560,12 @@ MYSQL_FIELD_OFFSET mysql_field_tell(MYSQL_RES *res);
 MYSQL_FIELD_OFFSET mysql_field_seek(MYSQL_RES *result, MYSQL_FIELD_OFFSET offset);
 MYSQL_RES *mysql_stmt_param_metadata(MYSQL_STMT *stmt);
 
-// -------------------------------------------------------------------------------- deprecated functions
+// ------------------------------------------------------ deprecated functions
 
-unsigned long mysql_escape_string(char *to, const char *from, unsigned long from_length); // use mysql_real_escape_string
+unsigned long mysql_escape_string(char *to, const char *from,
+	unsigned long from_length); // use mysql_real_escape_string
 int mysql_query(MYSQL *mysql, const char *q); // use mysql_real_query
-MYSQL_RES *mysql_list_fields(MYSQL *mysql, const char *table, const char *wild); // use "SHOW COLUMNS FROM table"
+MYSQL_RES *mysql_list_fields(MYSQL *mysql, const char *table,
+	const char *wild); // use "SHOW COLUMNS FROM table"
 
 ]]

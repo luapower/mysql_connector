@@ -768,8 +768,14 @@ function stmt.affected_rows(stmt)
 end
 
 stmt.insert_id = C.mysql_stmt_insert_id
-stmt.field_count = C.mysql_stmt_field_count
-stmt.param_count = C.mysql_stmt_param_count
+
+function stmt.field_count(stmt)
+	return tonumber(C.mysql_stmt_field_count(stmt))
+end
+
+function stmt.param_count(stmt)
+	return tonumber(C.mysql_stmt_param_count(stmt))
+end
 
 function stmt.errno(stmt)
 	local err = C.mysql_stmt_errno(stmt)

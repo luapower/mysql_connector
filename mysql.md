@@ -222,7 +222,10 @@ Fetch and return the next row of values from the current result set. Returns nil
     * `"s"` - do not convert numeric and time values to Lua types.
   * the `row_t` arg  is an optional table to store the row values in, instead of creating a new one on each fetch.
   * options "a" and "n" can be combined to get a table with both numeric and field name indices.
-  * if `mode` is missing or if neither "a" nor "n" is specified, the values are returned to the caller unpacked, after a first value that is always true, to make it easy to distinguish between a valid `NULL` value in the first column and eof.
+  * if `mode` is missing or if neither "a" nor "n" is specified, the values
+  are returned to the caller unpacked, after a first value that is always
+  true, to make it easy to distinguish between a valid `NULL` value in the
+  first column and eof.
   * in "n" mode, the result table may contain `nil` values so `#row_t` and `ipairs(row_t)` are out; instead iterate from 1 to `result:field_count()`.
   * in "a" mode, for fields with duplicate names only the last field will be present.
   * if `mode` does not specify `"s"`, the following conversions are applied on the returned values:

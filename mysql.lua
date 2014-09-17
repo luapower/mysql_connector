@@ -235,7 +235,9 @@ end
 
 function conn.commit(mysql) checkz(mysql, C.mysql_commit(mysql)) end
 function conn.rollback(mysql) checkz(mysql, C.mysql_rollback(mysql)) end
-function conn.set_autocommit(mysql, yes) checkz(mysql, C.mysql_autocommit(mysql, yes == nil or yes)) end
+function conn.set_autocommit(mysql, yes)
+	checkz(mysql, C.mysql_autocommit(mysql, yes == nil or yes))
+end
 
 --queries
 

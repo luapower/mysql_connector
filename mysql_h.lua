@@ -149,21 +149,21 @@ enum {
 	MYSQL_CLIENT_IGNORE_SIGPIPE = 4096,           /* IGNORE sigpipes */
 	MYSQL_CLIENT_TRANSACTIONS = 8192,             /* Client knows about transactions */
 	MYSQL_CLIENT_RESERVED = 16384,                /* Old flag for 4.1 protocol  */
-	MYSQL_CLIENT_SECURE_CONNECTION = (1UL << 15), /* New 4.1 authentication */
-	MYSQL_CLIENT_MULTI_STATEMENTS = (1UL << 16),  /* Enable/disable multi-stmt support */
-	MYSQL_CLIENT_MULTI_RESULTS = (1UL << 17),     /* Enable/disable multi-results */
-	MYSQL_CLIENT_PS_MULTI_RESULTS = (1UL << 18),  /* Multi-results in PS-protocol */
-	MYSQL_CLIENT_PLUGIN_AUTH = (1UL << 19),       /* Client supports plugin authentication */
-	MYSQL_CLIENT_CONNECT_ATTRS = (1UL << 20),     /* Client supports connection attributes */
+	MYSQL_CLIENT_SECURE_CONNECTION = (1U << 15),  /* New 4.1 authentication */
+	MYSQL_CLIENT_MULTI_STATEMENTS = (1U << 16),   /* Enable/disable multi-stmt support */
+	MYSQL_CLIENT_MULTI_RESULTS = (1U << 17),      /* Enable/disable multi-results */
+	MYSQL_CLIENT_PS_MULTI_RESULTS = (1U << 18),   /* Multi-results in PS-protocol */
+	MYSQL_CLIENT_PLUGIN_AUTH = (1U << 19),        /* Client supports plugin authentication */
+	MYSQL_CLIENT_CONNECT_ATTRS = (1U << 20),      /* Client supports connection attributes */
 
 	/* Enable authentication response packet to be larger than 255 bytes. */
-	MYSQL_CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA = (1UL << 21),
+	MYSQL_CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA = (1U << 21),
 
 	/* Don't close the connection for a connection with expired password. */
-	MYSQL_CLIENT_CAN_HANDLE_EXPIRED_PASSWORDS = (1UL << 22),
+	MYSQL_CLIENT_CAN_HANDLE_EXPIRED_PASSWORDS = (1U << 22),
 
-	MYSQL_CLIENT_SSL_VERIFY_SERVER_CERT = (1UL << 30),
-	MYSQL_CLIENT_REMEMBER_OPTIONS = (1UL << 31)
+	MYSQL_CLIENT_SSL_VERIFY_SERVER_CERT = (1U << 30),
+	MYSQL_CLIENT_REMEMBER_OPTIONS = (1U << 31)
 };
 MYSQL * mysql_real_connect(MYSQL *mysql, const char *host,
         const char *user,
@@ -403,10 +403,10 @@ enum {
 
 	/* RESET (remove all queries) from query cache */
 	MYSQL_REFRESH_QUERY_CACHE      = 65536,
-	MYSQL_REFRESH_QUERY_CACHE_FREE = 0x20000L,  /* pack query cache */
-	MYSQL_REFRESH_DES_KEY_FILE     = 0x40000L,
-	MYSQL_REFRESH_USER_RESOURCES   = 0x80000L,
-	MYSQL_REFRESH_FOR_EXPORT       = 0x100000L, /* FLUSH TABLES ... FOR EXPORT */
+	MYSQL_REFRESH_QUERY_CACHE_FREE = 0x20000,  /* pack query cache */
+	MYSQL_REFRESH_DES_KEY_FILE     = 0x40000,
+	MYSQL_REFRESH_USER_RESOURCES   = 0x80000,
+	MYSQL_REFRESH_FOR_EXPORT       = 0x100000, /* FLUSH TABLES ... FOR EXPORT */
 };
 int mysql_refresh(MYSQL *mysql, unsigned int refresh_options); // needs RELOAD priviledge
 int mysql_dump_debug_info(MYSQL *mysql);                       // needs SUPER priviledge

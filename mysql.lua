@@ -59,7 +59,9 @@ function M.client_info()
 	return cstring(C.mysql_get_client_info())
 end
 
-M.client_version = C.mysql_get_client_version
+function M.client_version()
+	return tonumber(C.mysql_get_client_version)
+end
 
 --connections
 
@@ -209,7 +211,7 @@ function conn.ping(mysql)
 	myerror(mysql)
 end
 
-conn.thread_id = C.mysql_thread_id
+conn.thread_id = C.mysql_thread_id --NOTE: result is cdata on x64!
 
 function conn.stat(mysql)
 	return cstring(checkh(mysql, C.mysql_stat(mysql)))
@@ -223,7 +225,10 @@ function conn.host_info(mysql)
 	return cstring(checkh(mysql, C.mysql_get_host_info(mysql)))
 end
 
-conn.server_version = C.mysql_get_server_version
+function conn.server_version(mysql)
+	return tonumber(C.mysql_get_server_version(mysql))
+end
+
 conn.proto_info = C.mysql_get_proto_info
 
 
@@ -244,7 +249,7 @@ end
 function conn.escape_tobuffer(mysql, data, size, buf, sz)
 	size = size or #data
 	assert(sz >= size * 2 + 1)
-	return C.mysql_real_escape_string(mysql, buf, data, size)
+	return tonumber(C.mysql_real_escape_string(mysql, buf, data, size))
 end
 
 function conn.escape(mysql, data, size)
@@ -270,7 +275,7 @@ function conn.affected_rows(mysql)
 	return tonumber(n)
 end
 
-conn.insert_id = C.mysql_insert_id
+conn.insert_id = C.mysql_insert_id --NOTE: result is cdata on x64!
 
 function conn.errno(conn)
 	local err = C.mysql_errno(conn)
@@ -400,7 +405,7 @@ function res.field_type(res, i)
 	assert(i >= 1 and i <= res:field_count(), 'index out of range')
 	local info = C.mysql_fetch_field_direct(res, i-1)
 	local unsigned = bit.bor(info.flags, C.MYSQL_UNSIGNED_FLAG) ~= 0
-	return field_type_name(info), info.length, unsigned, info.decimals
+	return field_type_name(info), tonumber(info.length), unsigned, info.decimals
 end
 
 function res.field_info(res, i)
@@ -414,8 +419,8 @@ function res.field_info(res, i)
 		db         = cstring(info.db, info.db_length),
 		catalog    = cstring(info.catalog, info.catalog_length),
 		def        = cstring(info.def, info.def_length),
-		length     = info.length,
-		max_length = info.max_length,
+		length     = tonumber(info.length),
+		max_length = tonumber(info.max_length),
 		decimals   = info.decimals,
 		charsetnr  = info.charsetnr,
 		type_flag  = tonumber(info.type),
@@ -607,7 +612,7 @@ local function fetch_row(res, numeric, assoc, decode, field_count, fields, t)
 			else
 				decoder = ffi.string
 			end
-			v = decoder(values[i], sizes[i])
+			v = decoder(values[i], tonumber(sizes[i]))
 			if numeric then
 				t[i+1] = v
 			end
@@ -1000,7 +1005,7 @@ local function bind_buffer(bb_types, meta, types)
 	self.count = #types
 	self.buffer = ffi.new('MYSQL_BIND[?]', #types)
 	self.data = {} --data buffers, one for each field
-	self.lengths = ffi.new('uint32_t[?]', #types) --length buffers, one for each field
+	self.lengths = ffi.new('unsigned long[?]', #types) --length buffers, one for each field
 	self.null_flags = ffi.new('my_bool[?]', #types) --null flag buffers, one for each field
 	self.error_flags = ffi.new('my_bool[?]', #types) --error (truncation) flag buffers, one for each field
 
@@ -1157,7 +1162,7 @@ function fields:get(i)
 			error'invalid time'
 		end
 	else
-		local sz = math.min(self.buffer[i-1].buffer_length, self.lengths[i-1])
+		local sz = math.min(tonumber(self.buffer[i-1].buffer_length), tonumber(self.lengths[i-1]))
 		if btype == C.MYSQL_TYPE_BIT then
 			return parse_bit(self.data[i], sz)
 		else

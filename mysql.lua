@@ -67,7 +67,7 @@ function M.client_info()
 end
 
 function M.client_version()
-	return tonumber(C.mysql_get_client_version)
+	return tonumber(C.mysql_get_client_version())
 end
 
 --connections
@@ -1102,7 +1102,7 @@ function fields:get_date(i)
 		time and tm.hour or nil,
 		time and tm.minute or nil,
 		time and tm.second or nil,
-		time and tm.second_part or nil
+		time and tonumber(tm.second_part) or nil
 end
 
 function params:set_date(i, year, month, day, hour, min, sec, frac)
@@ -1159,12 +1159,12 @@ function fields:get(i)
 	elseif time_types[btype] then
 		local t = self.data[i]
 		if t.time_type == C.MYSQL_TIMESTAMP_TIME then
-			return datetime{hour = t.hour, min = t.minute, sec = t.second, frac = t.second_part}
+			return datetime{hour = t.hour, min = t.minute, sec = t.second, frac = tonumber(t.second_part)}
 		elseif t.time_type == C.MYSQL_TIMESTAMP_DATE then
 			return datetime{year = t.year, month = t.month, day = t.day}
 		elseif t.time_type == C.MYSQL_TIMESTAMP_DATETIME then
 			return datetime{year = t.year, month = t.month, day = t.day,
-								hour = t.hour, min = t.minute, sec = t.second, frac = t.second_part}
+								hour = t.hour, min = t.minute, sec = t.second, frac = tonumber(t.second_part)}
 		else
 			error'invalid time'
 		end

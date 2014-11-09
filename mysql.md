@@ -535,6 +535,6 @@ Instruct the server to dump debug info in the log file. `SUPER` priviledge neede
 
 ## TODO
 
-  * reader function for getting large blobs in chunks using mysql_stmt_fetch_column: `stmt:chunks(i[, bufsize])` or `stmt:read()` ?
-  * test with Linux, OSX, 64bit OSs
+  * reader function for getting large blobs in chunks using
+  mysql_stmt_fetch_column: `stmt:chunks(i[, bufsize])` or `stmt:read()` ?
   * support connecting against different runtimes (client_library option)

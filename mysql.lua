@@ -5,6 +5,8 @@
 --Supports mysql Connector/C 6.1.
 --Based on mySQL 5.7 manual.
 
+if not ... then require'mysql_test' end
+
 local ffi = require'ffi'
 local bit = require'bit'
 require'mysql_h'
@@ -1254,12 +1256,9 @@ end
 
 --publish methods
 
-if not rawget(_G, '__MYSQL__') then
-__MYSQL__ = true
 ffi.metatype('MYSQL', {__index = conn})
 ffi.metatype('MYSQL_RES', {__index = res})
 ffi.metatype('MYSQL_STMT', {__index = stmt})
-end
 
 --publish classes (for introspection, not extending)
 
@@ -1268,7 +1267,5 @@ M.res = res
 M.stmt = stmt
 M.params = params
 M.fields = fields
-
-if not ... then require'mysql_test' end
 
 return M

@@ -12,6 +12,8 @@ A complete, lightweight ffi binding of the mysql client library.
 ## Summary
 
 -------------------------------------------------------------------------------- --------------------------------------------------------------------------------
+**[Initialization]**
+`mysql.config(['mysql'|'mariadb'|libname|clib]) -> mysql`
 **[Connections]**
 `mysql.connect(host, [user], [pass], [db], [charset], [port]) -> conn`           connect to a mysql server
 `mysql.connect(options_t) -> conn`                                               connect to a mysql server
@@ -168,6 +170,14 @@ end
 
 print_help'CONCAT%'
 ~~~
+
+## Initialization
+
+### `mysql.config(['mysql'|'mariadb'|libname|clib]) -> mysql`
+
+Load the mysql client library to use (default is 'mysql').
+This function is called on every module-level function.
+Calling this function again is a no-op.
 
 ## Connections
 
@@ -537,4 +547,3 @@ Instruct the server to dump debug info in the log file. `SUPER` priviledge neede
 
   * reader function for getting large blobs in chunks using
   mysql_stmt_fetch_column: `stmt:chunks(i[, bufsize])` or `stmt:read()` ?
-  * support connecting against different runtimes (client_library option)

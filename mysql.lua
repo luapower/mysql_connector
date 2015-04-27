@@ -11,16 +11,27 @@ local ffi = require'ffi'
 local bit = require'bit'
 require'mysql_h'
 
---find a libmysql implementation
-local myok, myC, maok, maC
-myok, myC = pcall(ffi.load, ffi.abi'win' and 'libmysql' or 'mysqlclient')
-if not myok then
-	maok, maC = pcall(ffi.load, ffi.abi'win' and 'libmariadb' or 'mariadb')
-end
-local C = assert((myok and myC) or (maok and maC),
-	'mysql or mariadb client library not found')
+local C
+local M = {}
 
-local M = {C = C}
+--select a mysql client library implementation.
+local function config(lib)
+	if not C then
+		if not lib or lib == 'mysql' then
+			C = ffi.load(ffi.abi'win' and 'libmysql' or 'mysqlclient')
+		elseif lib == 'mariadb' then
+			C = ffi.load(ffi.abi'win' and 'libmariadb' or 'mariadb')
+		elseif type(lib) == 'string' then
+			C = ffi.load(lib)
+		else
+			C = lib
+		end
+		M.C = C
+	end
+	return M
+end
+
+M.config = config
 
 --we compare NULL pointers against NULL instead of nil for compatibility with luaffi.
 local NULL = ffi.cast('void*', nil)
@@ -61,14 +72,17 @@ end
 --client library info
 
 function M.thread_safe()
+	config()
 	return C.mysql_thread_safe() == 1
 end
 
 function M.client_info()
+	config()
 	return cstring(C.mysql_get_client_info())
 end
 
 function M.client_version()
+	config()
 	return tonumber(C.mysql_get_client_version())
 end
 
@@ -112,6 +126,7 @@ local option_encoders = {
 }
 
 function M.connect(t, ...)
+	config()
 	local host, user, pass, db, charset, port
 	local unix_socket, flags, options, attrs
 	local key, cert, ca, capath, cipher
@@ -220,7 +235,9 @@ function conn.ping(mysql)
 	myerror(mysql)
 end
 
-conn.thread_id = C.mysql_thread_id --NOTE: result is cdata on x64!
+function conn.thread_id(mysql)
+	return C.mysql_thread_id(mysql) --NOTE: result is cdata on x64!
+end
 
 function conn.stat(mysql)
 	return cstring(checkh(mysql, C.mysql_stat(mysql)))
@@ -238,8 +255,9 @@ function conn.server_version(mysql)
 	return tonumber(C.mysql_get_server_version(mysql))
 end
 
-conn.proto_info = C.mysql_get_proto_info
-
+function conn.proto_info(...)
+	return C.mysql_get_proto_info(...)
+end
 
 function conn.ssl_cipher(mysql)
 	return cstring(C.mysql_get_ssl_cipher(mysql))
@@ -275,7 +293,9 @@ end
 
 --query info
 
-conn.field_count = C.mysql_field_count
+function conn.field_count(...)
+	return C.mysql_field_count(...)
+end
 
 local minus1_uint64 = ffi.cast('uint64_t', ffi.cast('int64_t', -1))
 function conn.affected_rows(mysql)
@@ -284,7 +304,9 @@ function conn.affected_rows(mysql)
 	return tonumber(n)
 end
 
-conn.insert_id = C.mysql_insert_id --NOTE: result is cdata on x64!
+function conn.insert_id(...)
+	return C.mysql_insert_id(...) --NOTE: result is cdata on x64!
+end
 
 function conn.errno(conn)
 	local err = C.mysql_errno(conn)
@@ -296,7 +318,9 @@ function conn.sqlstate(mysql)
 	return cstring(C.mysql_sqlstate(mysql))
 end
 
-conn.warning_count = C.mysql_warning_count
+function conn.warning_count(...)
+	return C.mysql_warning_count(...)
+end
 
 function conn.info(mysql)
 	return cstring(C.mysql_info(mysql))
@@ -317,13 +341,13 @@ end
 
 local function result_function(func)
 	return function(mysql)
-		local res = checkh(mysql, func(mysql))
+		local res = checkh(mysql, C[func](mysql))
 		return ffi.gc(res, C.mysql_free_result)
 	end
 end
 
-conn.store_result = result_function(C.mysql_store_result)
-conn.use_result = result_function(C.mysql_use_result)
+conn.store_result = result_function'mysql_store_result'
+conn.use_result = result_function'mysql_use_result'
 
 local res = {} --result methods
 
@@ -336,7 +360,9 @@ function res.row_count(res)
 	return tonumber(C.mysql_num_rows(res))
 end
 
-res.field_count = C.mysql_num_fields
+function res.field_count(...)
+	return C.mysql_num_fields(...)
+end
 
 function res.eof(res)
 	return C.mysql_eof(res) ~= 0
@@ -345,60 +371,60 @@ end
 --field info
 
 local field_type_names = {
-	[C.MYSQL_TYPE_DECIMAL]     = 'decimal',    --DECIMAL or NUMERIC
-	[C.MYSQL_TYPE_TINY]        = 'tinyint',
-	[C.MYSQL_TYPE_SHORT]       = 'smallint',
-	[C.MYSQL_TYPE_LONG]        = 'int',
-	[C.MYSQL_TYPE_FLOAT]       = 'float',
-	[C.MYSQL_TYPE_DOUBLE]      = 'double',     --DOUBLE or REAL
-	[C.MYSQL_TYPE_NULL]        = 'null',
-	[C.MYSQL_TYPE_TIMESTAMP]   = 'timestamp',
-	[C.MYSQL_TYPE_LONGLONG]    = 'bigint',
-	[C.MYSQL_TYPE_INT24]       = 'mediumint',
-	[C.MYSQL_TYPE_DATE]        = 'date',       --pre mysql 5.0, storage = 4 bytes
-	[C.MYSQL_TYPE_TIME]        = 'time',
-	[C.MYSQL_TYPE_DATETIME]    = 'datetime',
-	[C.MYSQL_TYPE_YEAR]        = 'year',
-	[C.MYSQL_TYPE_NEWDATE]     = 'date',       --mysql 5.0+, storage = 3 bytes
-	[C.MYSQL_TYPE_VARCHAR]     = 'varchar',
-	[C.MYSQL_TYPE_BIT]         = 'bit',
-	[C.MYSQL_TYPE_TIMESTAMP2]  = 'timestamp',  --mysql 5.6+, can store fractional seconds
-	[C.MYSQL_TYPE_DATETIME2]   = 'datetime',   --mysql 5.6+, can store fractional seconds
-	[C.MYSQL_TYPE_TIME2]       = 'time',       --mysql 5.6+, can store fractional seconds
-	[C.MYSQL_TYPE_NEWDECIMAL]  = 'decimal',    --mysql 5.0+, Precision math DECIMAL or NUMERIC
-	[C.MYSQL_TYPE_ENUM]        = 'enum',
-	[C.MYSQL_TYPE_SET]         = 'set',
-	[C.MYSQL_TYPE_TINY_BLOB]   = 'tinyblob',
-	[C.MYSQL_TYPE_MEDIUM_BLOB] = 'mediumblob',
-	[C.MYSQL_TYPE_LONG_BLOB]   = 'longblob',
-	[C.MYSQL_TYPE_BLOB]        = 'text',       --TEXT or BLOB
-	[C.MYSQL_TYPE_VAR_STRING]  = 'varchar',    --VARCHAR or VARBINARY
-	[C.MYSQL_TYPE_STRING]      = 'char',       --CHAR or BINARY
-	[C.MYSQL_TYPE_GEOMETRY]    = 'spatial',    --Spatial field
+	[ffi.C.MYSQL_TYPE_DECIMAL]     = 'decimal',    --DECIMAL or NUMERIC
+	[ffi.C.MYSQL_TYPE_TINY]        = 'tinyint',
+	[ffi.C.MYSQL_TYPE_SHORT]       = 'smallint',
+	[ffi.C.MYSQL_TYPE_LONG]        = 'int',
+	[ffi.C.MYSQL_TYPE_FLOAT]       = 'float',
+	[ffi.C.MYSQL_TYPE_DOUBLE]      = 'double',     --DOUBLE or REAL
+	[ffi.C.MYSQL_TYPE_NULL]        = 'null',
+	[ffi.C.MYSQL_TYPE_TIMESTAMP]   = 'timestamp',
+	[ffi.C.MYSQL_TYPE_LONGLONG]    = 'bigint',
+	[ffi.C.MYSQL_TYPE_INT24]       = 'mediumint',
+	[ffi.C.MYSQL_TYPE_DATE]        = 'date',       --pre mysql 5.0, storage = 4 bytes
+	[ffi.C.MYSQL_TYPE_TIME]        = 'time',
+	[ffi.C.MYSQL_TYPE_DATETIME]    = 'datetime',
+	[ffi.C.MYSQL_TYPE_YEAR]        = 'year',
+	[ffi.C.MYSQL_TYPE_NEWDATE]     = 'date',       --mysql 5.0+, storage = 3 bytes
+	[ffi.C.MYSQL_TYPE_VARCHAR]     = 'varchar',
+	[ffi.C.MYSQL_TYPE_BIT]         = 'bit',
+	[ffi.C.MYSQL_TYPE_TIMESTAMP2]  = 'timestamp',  --mysql 5.6+, can store fractional seconds
+	[ffi.C.MYSQL_TYPE_DATETIME2]   = 'datetime',   --mysql 5.6+, can store fractional seconds
+	[ffi.C.MYSQL_TYPE_TIME2]       = 'time',       --mysql 5.6+, can store fractional seconds
+	[ffi.C.MYSQL_TYPE_NEWDECIMAL]  = 'decimal',    --mysql 5.0+, Precision math DECIMAL or NUMERIC
+	[ffi.C.MYSQL_TYPE_ENUM]        = 'enum',
+	[ffi.C.MYSQL_TYPE_SET]         = 'set',
+	[ffi.C.MYSQL_TYPE_TINY_BLOB]   = 'tinyblob',
+	[ffi.C.MYSQL_TYPE_MEDIUM_BLOB] = 'mediumblob',
+	[ffi.C.MYSQL_TYPE_LONG_BLOB]   = 'longblob',
+	[ffi.C.MYSQL_TYPE_BLOB]        = 'text',       --TEXT or BLOB
+	[ffi.C.MYSQL_TYPE_VAR_STRING]  = 'varchar',    --VARCHAR or VARBINARY
+	[ffi.C.MYSQL_TYPE_STRING]      = 'char',       --CHAR or BINARY
+	[ffi.C.MYSQL_TYPE_GEOMETRY]    = 'spatial',    --Spatial field
 }
 
 local binary_field_type_names = {
-	[C.MYSQL_TYPE_BLOB]        = 'blob',
-	[C.MYSQL_TYPE_VAR_STRING]  = 'varbinary',
-	[C.MYSQL_TYPE_STRING]      = 'binary',
+	[ffi.C.MYSQL_TYPE_BLOB]        = 'blob',
+	[ffi.C.MYSQL_TYPE_VAR_STRING]  = 'varbinary',
+	[ffi.C.MYSQL_TYPE_STRING]      = 'binary',
 }
 
 local field_flag_names = {
-	[C.MYSQL_NOT_NULL_FLAG]         = 'not_null',
-	[C.MYSQL_PRI_KEY_FLAG]          = 'pri_key',
-	[C.MYSQL_UNIQUE_KEY_FLAG]       = 'unique_key',
-	[C.MYSQL_MULTIPLE_KEY_FLAG]     = 'key',
-	[C.MYSQL_BLOB_FLAG]             = 'is_blob',
-	[C.MYSQL_UNSIGNED_FLAG]         = 'unsigned',
-	[C.MYSQL_ZEROFILL_FLAG]         = 'zerofill',
-	[C.MYSQL_BINARY_FLAG]           = 'is_binary',
-	[C.MYSQL_ENUM_FLAG]             = 'is_enum',
-	[C.MYSQL_AUTO_INCREMENT_FLAG]   = 'autoincrement',
-	[C.MYSQL_TIMESTAMP_FLAG]        = 'is_timestamp',
-	[C.MYSQL_SET_FLAG]              = 'is_set',
-	[C.MYSQL_NO_DEFAULT_VALUE_FLAG] = 'no_default',
-	[C.MYSQL_ON_UPDATE_NOW_FLAG]    = 'on_update_now',
-	[C.MYSQL_NUM_FLAG]              = 'is_number',
+	[ffi.C.MYSQL_NOT_NULL_FLAG]         = 'not_null',
+	[ffi.C.MYSQL_PRI_KEY_FLAG]          = 'pri_key',
+	[ffi.C.MYSQL_UNIQUE_KEY_FLAG]       = 'unique_key',
+	[ffi.C.MYSQL_MULTIPLE_KEY_FLAG]     = 'key',
+	[ffi.C.MYSQL_BLOB_FLAG]             = 'is_blob',
+	[ffi.C.MYSQL_UNSIGNED_FLAG]         = 'unsigned',
+	[ffi.C.MYSQL_ZEROFILL_FLAG]         = 'zerofill',
+	[ffi.C.MYSQL_BINARY_FLAG]           = 'is_binary',
+	[ffi.C.MYSQL_ENUM_FLAG]             = 'is_enum',
+	[ffi.C.MYSQL_AUTO_INCREMENT_FLAG]   = 'autoincrement',
+	[ffi.C.MYSQL_TIMESTAMP_FLAG]        = 'is_timestamp',
+	[ffi.C.MYSQL_SET_FLAG]              = 'is_set',
+	[ffi.C.MYSQL_NO_DEFAULT_VALUE_FLAG] = 'no_default',
+	[ffi.C.MYSQL_ON_UPDATE_NOW_FLAG]    = 'on_update_now',
+	[ffi.C.MYSQL_NUM_FLAG]              = 'is_number',
 }
 
 local function field_type_name(info)
@@ -569,27 +595,27 @@ local function parse_datetime(data, sz)
 end
 
 local field_decoders = { --other field types not present here are returned as strings, unparsed
-	[C.MYSQL_TYPE_TINY] = parse_int,
-	[C.MYSQL_TYPE_SHORT] = parse_int,
-	[C.MYSQL_TYPE_LONG] = parse_int,
-	[C.MYSQL_TYPE_FLOAT] = parse_float,
-	[C.MYSQL_TYPE_DOUBLE] = parse_double,
-	[C.MYSQL_TYPE_TIMESTAMP] = parse_datetime,
-	[C.MYSQL_TYPE_LONGLONG] = parse_int64,
-	[C.MYSQL_TYPE_INT24] = parse_int,
-	[C.MYSQL_TYPE_DATE] = parse_date,
-	[C.MYSQL_TYPE_TIME] = parse_time,
-	[C.MYSQL_TYPE_DATETIME] = parse_datetime,
-	[C.MYSQL_TYPE_NEWDATE] = parse_date,
-	[C.MYSQL_TYPE_TIMESTAMP2] = parse_datetime,
-	[C.MYSQL_TYPE_DATETIME2] = parse_datetime,
-	[C.MYSQL_TYPE_TIME2] = parse_time,
-	[C.MYSQL_TYPE_YEAR] = parse_int,
-	[C.MYSQL_TYPE_BIT] = parse_bit,
+	[ffi.C.MYSQL_TYPE_TINY] = parse_int,
+	[ffi.C.MYSQL_TYPE_SHORT] = parse_int,
+	[ffi.C.MYSQL_TYPE_LONG] = parse_int,
+	[ffi.C.MYSQL_TYPE_FLOAT] = parse_float,
+	[ffi.C.MYSQL_TYPE_DOUBLE] = parse_double,
+	[ffi.C.MYSQL_TYPE_TIMESTAMP] = parse_datetime,
+	[ffi.C.MYSQL_TYPE_LONGLONG] = parse_int64,
+	[ffi.C.MYSQL_TYPE_INT24] = parse_int,
+	[ffi.C.MYSQL_TYPE_DATE] = parse_date,
+	[ffi.C.MYSQL_TYPE_TIME] = parse_time,
+	[ffi.C.MYSQL_TYPE_DATETIME] = parse_datetime,
+	[ffi.C.MYSQL_TYPE_NEWDATE] = parse_date,
+	[ffi.C.MYSQL_TYPE_TIMESTAMP2] = parse_datetime,
+	[ffi.C.MYSQL_TYPE_DATETIME2] = parse_datetime,
+	[ffi.C.MYSQL_TYPE_TIME2] = parse_time,
+	[ffi.C.MYSQL_TYPE_YEAR] = parse_int,
+	[ffi.C.MYSQL_TYPE_BIT] = parse_bit,
 }
 
 local unsigned_decoders = {
-	[C.MYSQL_TYPE_LONGLONG] = parse_uint64,
+	[ffi.C.MYSQL_TYPE_LONGLONG] = parse_uint64,
 }
 
 local function mode_flags(mode)
@@ -664,7 +690,9 @@ function res.rows(res, mode, t)
 	end
 end
 
-res.tell = C.mysql_row_tell
+function res.tell(...)
+	return C.mysql_row_tell(...)
+end
 
 function res.seek(res, where) --use in conjunction with res:row_count()
 	if type(where) == 'number' then
@@ -678,14 +706,14 @@ end
 
 local function list_function(func)
 	return function(mysql, wild)
-		local res = checkh(mysql, func(mysql, wild))
+		local res = checkh(mysql, C[func](mysql, wild))
 		return ffi.gc(res, C.mysql_free_result)
 	end
 end
 
-conn.list_dbs = list_function(C.mysql_list_dbs)
-conn.list_tables = list_function(C.mysql_list_tables)
-conn.list_processes = result_function(C.mysql_list_processes)
+conn.list_dbs = list_function'mysql_list_dbs'
+conn.list_tables = list_function'mysql_list_tables'
+conn.list_processes = result_function'mysql_list_processes'
 
 --remote control
 
@@ -781,7 +809,9 @@ function stmt.affected_rows(stmt)
 	return tonumber(n)
 end
 
-stmt.insert_id = C.mysql_stmt_insert_id
+function stmt.insert_id(...)
+	return C.mysql_stmt_insert_id(...)
+end
 
 function stmt.field_count(stmt)
 	return tonumber(C.mysql_stmt_field_count(stmt))
@@ -831,7 +861,9 @@ function stmt.reset(stmt)
 	stcheckz(stmt, C.mysql_stmt_reset(stmt))
 end
 
-stmt.tell = C.mysql_stmt_row_tell
+function stmt.tell(...)
+	return C.mysql_stmt_row_tell(...)
+end
 
 function stmt.seek(stmt, where) --use in conjunction with stmt:row_count()
 	if type(where) == 'number' then
@@ -883,108 +915,108 @@ end
 --see http://dev.mysql.com/doc/refman/5.7/en/c-api-prepared-statement-type-codes.html
 local bb_types_input = {
 	--conversion-free types
-	tinyint    = C.MYSQL_TYPE_TINY,
-	smallint   = C.MYSQL_TYPE_SHORT,
-	int        = C.MYSQL_TYPE_LONG,
-	integer    = C.MYSQL_TYPE_LONG,       --alias of int
-	bigint     = C.MYSQL_TYPE_LONGLONG,
-	float      = C.MYSQL_TYPE_FLOAT,
-	double     = C.MYSQL_TYPE_DOUBLE,
-	time       = C.MYSQL_TYPE_TIME,
-	date       = C.MYSQL_TYPE_DATE,
-	datetime   = C.MYSQL_TYPE_DATETIME,
-	timestamp  = C.MYSQL_TYPE_TIMESTAMP,
-	text       = C.MYSQL_TYPE_STRING,
-	char       = C.MYSQL_TYPE_STRING,
-	varchar    = C.MYSQL_TYPE_STRING,
-	blob       = C.MYSQL_TYPE_BLOB,
-	binary     = C.MYSQL_TYPE_BLOB,
-	varbinary  = C.MYSQL_TYPE_BLOB,
-	null       = C.MYSQL_TYPE_NULL,
+	tinyint    = ffi.C.MYSQL_TYPE_TINY,
+	smallint   = ffi.C.MYSQL_TYPE_SHORT,
+	int        = ffi.C.MYSQL_TYPE_LONG,
+	integer    = ffi.C.MYSQL_TYPE_LONG,       --alias of int
+	bigint     = ffi.C.MYSQL_TYPE_LONGLONG,
+	float      = ffi.C.MYSQL_TYPE_FLOAT,
+	double     = ffi.C.MYSQL_TYPE_DOUBLE,
+	time       = ffi.C.MYSQL_TYPE_TIME,
+	date       = ffi.C.MYSQL_TYPE_DATE,
+	datetime   = ffi.C.MYSQL_TYPE_DATETIME,
+	timestamp  = ffi.C.MYSQL_TYPE_TIMESTAMP,
+	text       = ffi.C.MYSQL_TYPE_STRING,
+	char       = ffi.C.MYSQL_TYPE_STRING,
+	varchar    = ffi.C.MYSQL_TYPE_STRING,
+	blob       = ffi.C.MYSQL_TYPE_BLOB,
+	binary     = ffi.C.MYSQL_TYPE_BLOB,
+	varbinary  = ffi.C.MYSQL_TYPE_BLOB,
+	null       = ffi.C.MYSQL_TYPE_NULL,
 	--conversion types (can only use one of the above C types)
-	mediumint  = C.MYSQL_TYPE_LONG,
-	real       = C.MYSQL_TYPE_DOUBLE,
-	decimal    = C.MYSQL_TYPE_BLOB,
-	numeric    = C.MYSQL_TYPE_BLOB,
-	year       = C.MYSQL_TYPE_SHORT,
-	tinyblob   = C.MYSQL_TYPE_BLOB,
-	tinytext   = C.MYSQL_TYPE_BLOB,
-	mediumblob = C.MYSQL_TYPE_BLOB,
-	mediumtext = C.MYSQL_TYPE_BLOB,
-	longblob   = C.MYSQL_TYPE_BLOB,
-	longtext   = C.MYSQL_TYPE_BLOB,
-	bit        = C.MYSQL_TYPE_LONGLONG, --MYSQL_TYPE_BIT is not available for input params
-	set        = C.MYSQL_TYPE_BLOB,
-	enum       = C.MYSQL_TYPE_BLOB,
+	mediumint  = ffi.C.MYSQL_TYPE_LONG,
+	real       = ffi.C.MYSQL_TYPE_DOUBLE,
+	decimal    = ffi.C.MYSQL_TYPE_BLOB,
+	numeric    = ffi.C.MYSQL_TYPE_BLOB,
+	year       = ffi.C.MYSQL_TYPE_SHORT,
+	tinyblob   = ffi.C.MYSQL_TYPE_BLOB,
+	tinytext   = ffi.C.MYSQL_TYPE_BLOB,
+	mediumblob = ffi.C.MYSQL_TYPE_BLOB,
+	mediumtext = ffi.C.MYSQL_TYPE_BLOB,
+	longblob   = ffi.C.MYSQL_TYPE_BLOB,
+	longtext   = ffi.C.MYSQL_TYPE_BLOB,
+	bit        = ffi.C.MYSQL_TYPE_LONGLONG, --MYSQL_TYPE_BIT is not available for input params
+	set        = ffi.C.MYSQL_TYPE_BLOB,
+	enum       = ffi.C.MYSQL_TYPE_BLOB,
 }
 
 local bb_types_output = {
 	--conversion-free types
-	tinyint    = C.MYSQL_TYPE_TINY,
-	smallint   = C.MYSQL_TYPE_SHORT,
-	mediumint  = C.MYSQL_TYPE_INT24,      --int32
-	int        = C.MYSQL_TYPE_LONG,
-	integer    = C.MYSQL_TYPE_LONG,       --alias of int
-	bigint     = C.MYSQL_TYPE_LONGLONG,
-	float      = C.MYSQL_TYPE_FLOAT,
-	double     = C.MYSQL_TYPE_DOUBLE,
-	real       = C.MYSQL_TYPE_DOUBLE,
-	decimal    = C.MYSQL_TYPE_NEWDECIMAL, --char[]
-	numeric    = C.MYSQL_TYPE_NEWDECIMAL, --char[]
-	year       = C.MYSQL_TYPE_SHORT,
-	time       = C.MYSQL_TYPE_TIME,
-	date       = C.MYSQL_TYPE_DATE,
-	datetime   = C.MYSQL_TYPE_DATETIME,
-	timestamp  = C.MYSQL_TYPE_TIMESTAMP,
-	char       = C.MYSQL_TYPE_STRING,
-	binary     = C.MYSQL_TYPE_STRING,
-	varchar    = C.MYSQL_TYPE_VAR_STRING,
-	varbinary  = C.MYSQL_TYPE_VAR_STRING,
-	tinyblob   = C.MYSQL_TYPE_TINY_BLOB,
-	tinytext   = C.MYSQL_TYPE_TINY_BLOB,
-	blob       = C.MYSQL_TYPE_BLOB,
-	text       = C.MYSQL_TYPE_BLOB,
-	mediumblob = C.MYSQL_TYPE_MEDIUM_BLOB,
-	mediumtext = C.MYSQL_TYPE_MEDIUM_BLOB,
-	longblob   = C.MYSQL_TYPE_LONG_BLOB,
-	longtext   = C.MYSQL_TYPE_LONG_BLOB,
-	bit        = C.MYSQL_TYPE_BIT,
+	tinyint    = ffi.C.MYSQL_TYPE_TINY,
+	smallint   = ffi.C.MYSQL_TYPE_SHORT,
+	mediumint  = ffi.C.MYSQL_TYPE_INT24,      --int32
+	int        = ffi.C.MYSQL_TYPE_LONG,
+	integer    = ffi.C.MYSQL_TYPE_LONG,       --alias of int
+	bigint     = ffi.C.MYSQL_TYPE_LONGLONG,
+	float      = ffi.C.MYSQL_TYPE_FLOAT,
+	double     = ffi.C.MYSQL_TYPE_DOUBLE,
+	real       = ffi.C.MYSQL_TYPE_DOUBLE,
+	decimal    = ffi.C.MYSQL_TYPE_NEWDECIMAL, --char[]
+	numeric    = ffi.C.MYSQL_TYPE_NEWDECIMAL, --char[]
+	year       = ffi.C.MYSQL_TYPE_SHORT,
+	time       = ffi.C.MYSQL_TYPE_TIME,
+	date       = ffi.C.MYSQL_TYPE_DATE,
+	datetime   = ffi.C.MYSQL_TYPE_DATETIME,
+	timestamp  = ffi.C.MYSQL_TYPE_TIMESTAMP,
+	char       = ffi.C.MYSQL_TYPE_STRING,
+	binary     = ffi.C.MYSQL_TYPE_STRING,
+	varchar    = ffi.C.MYSQL_TYPE_VAR_STRING,
+	varbinary  = ffi.C.MYSQL_TYPE_VAR_STRING,
+	tinyblob   = ffi.C.MYSQL_TYPE_TINY_BLOB,
+	tinytext   = ffi.C.MYSQL_TYPE_TINY_BLOB,
+	blob       = ffi.C.MYSQL_TYPE_BLOB,
+	text       = ffi.C.MYSQL_TYPE_BLOB,
+	mediumblob = ffi.C.MYSQL_TYPE_MEDIUM_BLOB,
+	mediumtext = ffi.C.MYSQL_TYPE_MEDIUM_BLOB,
+	longblob   = ffi.C.MYSQL_TYPE_LONG_BLOB,
+	longtext   = ffi.C.MYSQL_TYPE_LONG_BLOB,
+	bit        = ffi.C.MYSQL_TYPE_BIT,
 	--conversion types (can only use one of the above C types)
-	null       = C.MYSQL_TYPE_TINY,
-	set        = C.MYSQL_TYPE_BLOB,
-	enum       = C.MYSQL_TYPE_BLOB,
+	null       = ffi.C.MYSQL_TYPE_TINY,
+	set        = ffi.C.MYSQL_TYPE_BLOB,
+	enum       = ffi.C.MYSQL_TYPE_BLOB,
 }
 
 local number_types = {
-	[C.MYSQL_TYPE_TINY]      = 'int8_t[1]',
-	[C.MYSQL_TYPE_SHORT]     = 'int16_t[1]',
-	[C.MYSQL_TYPE_LONG]      = 'int32_t[1]',
-	[C.MYSQL_TYPE_INT24]     = 'int32_t[1]',
-	[C.MYSQL_TYPE_LONGLONG]  = 'int64_t[1]',
-	[C.MYSQL_TYPE_FLOAT]     = 'float[1]',
-	[C.MYSQL_TYPE_DOUBLE]    = 'double[1]',
+	[ffi.C.MYSQL_TYPE_TINY]      = 'int8_t[1]',
+	[ffi.C.MYSQL_TYPE_SHORT]     = 'int16_t[1]',
+	[ffi.C.MYSQL_TYPE_LONG]      = 'int32_t[1]',
+	[ffi.C.MYSQL_TYPE_INT24]     = 'int32_t[1]',
+	[ffi.C.MYSQL_TYPE_LONGLONG]  = 'int64_t[1]',
+	[ffi.C.MYSQL_TYPE_FLOAT]     = 'float[1]',
+	[ffi.C.MYSQL_TYPE_DOUBLE]    = 'double[1]',
 }
 
 local uint_types = {
-	[C.MYSQL_TYPE_TINY]      = 'uint8_t[1]',
-	[C.MYSQL_TYPE_SHORT]     = 'uint16_t[1]',
-	[C.MYSQL_TYPE_LONG]      = 'uint32_t[1]',
-	[C.MYSQL_TYPE_INT24]     = 'uint32_t[1]',
-	[C.MYSQL_TYPE_LONGLONG]  = 'uint64_t[1]',
+	[ffi.C.MYSQL_TYPE_TINY]      = 'uint8_t[1]',
+	[ffi.C.MYSQL_TYPE_SHORT]     = 'uint16_t[1]',
+	[ffi.C.MYSQL_TYPE_LONG]      = 'uint32_t[1]',
+	[ffi.C.MYSQL_TYPE_INT24]     = 'uint32_t[1]',
+	[ffi.C.MYSQL_TYPE_LONGLONG]  = 'uint64_t[1]',
 }
 
 local time_types = {
-	[C.MYSQL_TYPE_TIME]      = true,
-	[C.MYSQL_TYPE_DATE]      = true,
-	[C.MYSQL_TYPE_DATETIME]  = true,
-	[C.MYSQL_TYPE_TIMESTAMP] = true,
+	[ffi.C.MYSQL_TYPE_TIME]      = true,
+	[ffi.C.MYSQL_TYPE_DATE]      = true,
+	[ffi.C.MYSQL_TYPE_DATETIME]  = true,
+	[ffi.C.MYSQL_TYPE_TIMESTAMP] = true,
 }
 
 local time_struct_types = {
-	[C.MYSQL_TYPE_TIME] = C.MYSQL_TIMESTAMP_TIME,
-	[C.MYSQL_TYPE_DATE] = C.MYSQL_TIMESTAMP_DATE,
-	[C.MYSQL_TYPE_DATETIME] = C.MYSQL_TIMESTAMP_DATETIME,
-	[C.MYSQL_TYPE_TIMESTAMP] = C.MYSQL_TIMESTAMP_DATETIME,
+	[ffi.C.MYSQL_TYPE_TIME] = ffi.C.MYSQL_TIMESTAMP_TIME,
+	[ffi.C.MYSQL_TYPE_DATE] = ffi.C.MYSQL_TIMESTAMP_DATE,
+	[ffi.C.MYSQL_TYPE_DATETIME] = ffi.C.MYSQL_TIMESTAMP_DATETIME,
+	[ffi.C.MYSQL_TYPE_TIMESTAMP] = ffi.C.MYSQL_TIMESTAMP_DATETIME,
 }
 
 local params = {} --params bind buffer methods

@@ -1,5 +1,4 @@
 ---
-project: mysql
 tagline: mysql database client
 ---
 

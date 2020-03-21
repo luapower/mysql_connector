@@ -667,8 +667,10 @@ function res.fetch(res, mode, t)
 	local row = fetch_row(res, numeric, assoc, decode, field_count, fields, t or {})
 	if packed then
 		return row
-	else
+	elseif row then
 		return true, unpack(row)
+	else
+		return true, nil
 	end
 end
 
@@ -684,8 +686,10 @@ function res.rows(res, mode, t)
 		i = i + 1
 		if packed then
 			return i, row
-		else
+		elseif row then
 			return i, unpack(row)
+		else
+			return true, nil
 		end
 	end
 end

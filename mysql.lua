@@ -670,7 +670,7 @@ function res.fetch(res, mode, t)
 	elseif row then
 		return true, unpack(row)
 	else
-		return true, nil
+		return true
 	end
 end
 
@@ -686,10 +686,8 @@ function res.rows(res, mode, t)
 		i = i + 1
 		if packed then
 			return i, row
-		elseif row then
-			return i, unpack(row)
 		else
-			return true, nil
+			return i, unpack(row)
 		end
 	end
 end

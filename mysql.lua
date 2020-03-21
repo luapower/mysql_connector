@@ -668,7 +668,7 @@ function res.fetch(res, mode, t)
 	if packed then
 		return row
 	else
-		return true, unpack(row)
+		return true, unpack(row or {})
 	end
 end
 

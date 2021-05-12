@@ -2,6 +2,8 @@
 
 if not ... then require'mysql_test'; return end
 
+local null = require'cjson'.null
+
 local function ellipsis(s,n)
 	return #s > n and (s:sub(1,n-3) .. '...') or s
 end
@@ -32,17 +34,17 @@ end
 
 local function print_table(fields, rows, aligns, minsize, print)
 	print = print or _G.print
-	minsize = minsize or math.huge
+	minsize = minsize or 0
 	local max_sizes = {}
 	for i=1,#rows do
 		for j=1,#fields do
-			max_sizes[j] = math.min(minsize, math.max(max_sizes[j] or 0, #rows[i][j]))
+			max_sizes[j] = math.max(max_sizes[j] or minsize, #rows[i][j])
 		end
 	end
 
 	local totalsize = 0
 	for j=1,#fields do
-		max_sizes[j] = math.max(max_sizes[j] or 0, #fields[j])
+		max_sizes[j] = math.max(max_sizes[j] or minsize, #fields[j])
 		totalsize = totalsize + max_sizes[j] + 3
 	end
 
@@ -82,7 +84,7 @@ local function invert_table(fields, rows, minsize)
 end
 
 local function format_cell(v)
-	if v == nil then
+	if v == null then
 		return 'NULL'
 	else
 		return tostring(v)
@@ -134,11 +136,31 @@ local function print_statement(stmt, minsize, print)
 	print_table(fields, rows, aligns, minsize, print)
 end
 
+function print_mysql_client_result(rows, cols, minsize)
+	local fs = {}
+	for i,col in ipairs(cols) do
+		fs[i] = col.name
+	end
+	local rs = {}
+	local aligns = {} --deduced from values
+	for i,row in ipairs(rows) do
+		local t = {}
+		for j=1,#fs do
+			t[j] = format_cell(row[j])
+			aligns[j] = cell_align(aligns[j], row[j])
+		end
+		rs[i] = t
+	end
+	print_table(fs, rs, aligns, minsize)
+end
+
 return {
 	fit = fit,
 	format_cell = format_cell,
+	cell_align = cell_align,
 	table = print_table,
-	result = print_result,
+	result = print_result, --for 'mysql' module
+	client_result = print_mysql_client_result, --for 'mysql_client' module
 	statement = print_statement,
 }
 

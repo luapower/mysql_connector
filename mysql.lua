@@ -1111,7 +1111,7 @@ end
 --realloc a buffer using supplied size. only for varsize fields.
 function params:realloc(i, size)
 	bind_check_range(self, i)
-	assert(ffi.istype(data, 'uint8_t[?]'), 'attempt to realloc a fixed size field')
+	assert(ffi.istype(self.data[i], 'uint8_t[?]'), 'attempt to realloc a fixed size field')
 	local data = size > 0 and ffi.new('uint8_t[?]', size) or nil
 	self.null_flags[i-1] = true
 	self.data[i] = data

@@ -136,31 +136,12 @@ local function print_statement(stmt, minsize, print)
 	print_table(fields, rows, aligns, minsize, print)
 end
 
-function print_mysql_client_result(rows, cols, minsize)
-	local fs = {}
-	for i,col in ipairs(cols) do
-		fs[i] = col.name
-	end
-	local rs = {}
-	local aligns = {} --deduced from values
-	for i,row in ipairs(rows) do
-		local t = {}
-		for j=1,#fs do
-			t[j] = format_cell(row[j])
-			aligns[j] = cell_align(aligns[j], row[j])
-		end
-		rs[i] = t
-	end
-	print_table(fs, rs, aligns, minsize)
-end
-
 return {
 	fit = fit,
 	format_cell = format_cell,
 	cell_align = cell_align,
 	table = print_table,
-	result = print_result, --for 'mysql' module
-	client_result = print_mysql_client_result, --for 'mysql_client' module
+	result = print_result,
 	statement = print_statement,
 }
 

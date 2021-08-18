@@ -2,8 +2,6 @@
 
 if not ... then require'mysql_test'; return end
 
-local null = require'cjson'.null
-
 local function ellipsis(s,n)
 	return #s > n and (s:sub(1,n-3) .. '...') or s
 end
@@ -84,7 +82,7 @@ local function invert_table(fields, rows, minsize)
 end
 
 local function format_cell(v)
-	if v == null then
+	if v == nil then
 		return 'NULL'
 	else
 		return tostring(v)

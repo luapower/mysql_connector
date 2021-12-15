@@ -1,6 +1,6 @@
 --mysql test unit (see comments for problems with libmariadb)
 --NOTE: create a database called 'test' first to run these tests!
-local mysql = require'mysql'
+local mysql = require'mysql_connector'
 local glue = require'glue'
 local pp = require'pp'
 local myprint = require'mysql_print'

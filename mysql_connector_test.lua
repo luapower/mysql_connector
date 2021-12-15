@@ -3,7 +3,7 @@
 local mysql = require'mysql_connector'
 local glue = require'glue'
 local pp = require'pp'
-local myprint = require'mysql_print'
+local myprint = require'mysql_connector_print'
 local ffi = require'ffi'
 
 mysql.bind'mariadb'
